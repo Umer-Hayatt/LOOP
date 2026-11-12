@@ -1,0 +1,30 @@
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Environment and secrets - NEVER COMMIT
+.env
+.env.local
+credentials.json
+token.json
+token*.json
+*.pem
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

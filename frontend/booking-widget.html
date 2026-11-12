@@ -1,0 +1,537 @@
+<!-- =========================================================================
+     LOOPONICS EMBEDDABLE BOOKING WIDGET
+     Self-contained snippet: Vanilla HTML, CSS, & JS (No external libraries required)
+     Paste anywhere into your site or right before </body> on looponics.tech
+     ========================================================================= -->
+
+<div id="looponics-widget-container">
+  <!-- Trigger Button -->
+  <button id="looponics-open-modal-btn" type="button" class="looponics-btn looponics-btn-primary">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+      <line x1="16" y1="2" x2="16" y2="6"></line>
+      <line x1="8" y1="2" x2="8" y2="6"></line>
+      <line x1="3" y1="10" x2="21" y2="10"></line>
+    </svg>
+    Book a Call
+  </button>
+
+  <!-- Booking Modal Overlay -->
+  <div id="looponics-modal-overlay" class="looponics-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="looponics-modal-box">
+      <button id="looponics-close-modal-btn" type="button" class="looponics-close-btn" aria-label="Close modal">&times;</button>
+      
+      <!-- Header -->
+      <div class="looponics-modal-header">
+        <h3 class="looponics-modal-title">Schedule a Call</h3>
+        <p class="looponics-modal-subtitle">Pick a time to connect with the Looponics team via Google Meet.</p>
+      </div>
+
+      <!-- Booking Form -->
+      <form id="looponics-booking-form">
+        <!-- Anti-bot Honeypot field (hidden from real users) -->
+        <input type="text" name="website" id="looponics-honeypot" tabindex="-1" autocomplete="off" style="display:none !important;" aria-hidden="true" />
+
+        <div class="looponics-form-group">
+          <label for="looponics-name" class="looponics-label">Full Name <span class="required">*</span></label>
+          <input type="text" id="looponics-name" name="name" class="looponics-input" placeholder="e.g. Alex Morgan" required />
+        </div>
+
+        <div class="looponics-form-group">
+          <label for="looponics-email" class="looponics-label">Email Address <span class="required">*</span></label>
+          <input type="email" id="looponics-email" name="email" class="looponics-input" placeholder="you@company.com" required />
+        </div>
+
+        <div class="looponics-form-group">
+          <label for="looponics-datetime" class="looponics-label">Date & Time <span class="required">*</span></label>
+          <input type="datetime-local" id="looponics-datetime" name="startTime" class="looponics-input" required />
+          <small class="looponics-help-text">Time is shown in your local browser timezone.</small>
+        </div>
+
+        <div class="looponics-form-group">
+          <label for="looponics-message" class="looponics-label">Message / Project Details (Optional)</label>
+          <textarea id="looponics-message" name="message" class="looponics-textarea" rows="3" placeholder="Tell us briefly about what you'd like to discuss..."></textarea>
+        </div>
+
+        <!-- Status Alerts -->
+        <div id="looponics-alert" class="looponics-alert" style="display: none;"></div>
+
+        <!-- Submit Button & Loading State -->
+        <button type="submit" id="looponics-submit-btn" class="looponics-btn looponics-btn-submit">
+          <span class="looponics-btn-text">Confirm Booking</span>
+        </button>
+      </form>
+
+      <!-- Wake-up / Loading State Notice -->
+      <div id="looponics-loader" class="looponics-loader-container" style="display: none;">
+        <div class="looponics-spinner"></div>
+        <p class="looponics-loader-title">Scheduling your Google Meet call...</p>
+        <p class="looponics-loader-subtitle">If the server is waking up from sleep, this may take up to 60 seconds. Please hold on!</p>
+      </div>
+
+      <!-- Success Screen -->
+      <div id="looponics-success-screen" class="looponics-success-box" style="display: none;">
+        <div class="looponics-success-icon">✓</div>
+        <h4 class="looponics-success-title">Your Call is Booked!</h4>
+        <p class="looponics-success-msg">A Google Calendar invitation with a Google Meet link has been sent to your email.</p>
+        <div class="looponics-meet-card">
+          <span class="looponics-meet-label">Google Meet Link:</span>
+          <a id="looponics-meet-link" href="#" target="_blank" rel="noopener noreferrer" class="looponics-meet-url"></a>
+        </div>
+        <button type="button" id="looponics-done-btn" class="looponics-btn looponics-btn-secondary" style="margin-top: 20px;">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Scoped Widget Styles */
+  #looponics-widget-container {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    box-sizing: border-box;
+  }
+  #looponics-widget-container * {
+    box-sizing: border-box;
+  }
+
+  .looponics-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-decoration: none;
+  }
+  .looponics-btn-primary {
+    background-color: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+  }
+  .looponics-btn-primary:hover {
+    background-color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px -2px rgba(37, 99, 235, 0.3);
+  }
+  .looponics-btn-submit {
+    width: 100%;
+    background-color: #0f172a;
+    color: #ffffff;
+    margin-top: 8px;
+  }
+  .looponics-btn-submit:hover {
+    background-color: #1e293b;
+  }
+  .looponics-btn-secondary {
+    width: 100%;
+    background-color: #f1f5f9;
+    color: #334155;
+  }
+  .looponics-btn-secondary:hover {
+    background-color: #e2e8f0;
+  }
+
+  /* Modal Overlay */
+  .looponics-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 999999;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .looponics-modal-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+
+  /* Modal Dialog */
+  .looponics-modal-box {
+    position: relative;
+    background: #ffffff;
+    width: 100%;
+    max-width: 480px;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .looponics-close-btn {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    background: transparent;
+    border: none;
+    font-size: 26px;
+    color: #94a3b8;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s ease;
+  }
+  .looponics-close-btn:hover {
+    color: #0f172a;
+  }
+
+  /* Header */
+  .looponics-modal-header {
+    margin-bottom: 24px;
+  }
+  .looponics-modal-title {
+    margin: 0 0 6px 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .looponics-modal-subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: #64748b;
+  }
+
+  /* Form Elements */
+  .looponics-form-group {
+    margin-bottom: 18px;
+  }
+  .looponics-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+  }
+  .looponics-label .required {
+    color: #ef4444;
+  }
+  .looponics-input,
+  .looponics-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1e293b;
+    background-color: #f8fafc;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .looponics-input:focus,
+  .looponics-textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+  .looponics-help-text {
+    display: block;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+
+  /* Alerts */
+  .looponics-alert {
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .looponics-alert-error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+  }
+
+  /* Loading State */
+  .looponics-loader-container {
+    text-align: center;
+    padding: 30px 10px;
+  }
+  .looponics-spinner {
+    width: 42px;
+    height: 42px;
+    border: 4px solid #e2e8f0;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: looponics-spin 0.8s linear infinite;
+    margin: 0 auto 16px auto;
+  }
+  @keyframes looponics-spin {
+    to { transform: rotate(360deg); }
+  }
+  .looponics-loader-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0 0 8px 0;
+  }
+  .looponics-loader-subtitle {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  /* Success Screen */
+  .looponics-success-box {
+    text-align: center;
+    padding: 20px 10px;
+  }
+  .looponics-success-icon {
+    width: 56px;
+    height: 56px;
+    background: #dcfce7;
+    color: #16a34a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: bold;
+    margin: 0 auto 16px auto;
+  }
+  .looponics-success-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 8px 0;
+  }
+  .looponics-success-msg {
+    font-size: 14px;
+    color: #475569;
+    margin: 0 0 20px 0;
+  }
+  .looponics-meet-card {
+    background: #f1f5f9;
+    border-radius: 8px;
+    padding: 14px;
+    text-align: left;
+    margin-bottom: 12px;
+  }
+  .looponics-meet-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+  .looponics-meet-url {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2563eb;
+    word-break: break-all;
+    text-decoration: underline;
+  }
+</style>
+
+<script>
+(function() {
+  // =========================================================================
+  // API URL CONFIGURATION
+  // Change to your live Render backend URL when deployed (e.g. https://looponics-api.onrender.com)
+  // =========================================================================
+  const API_URL = "http://localhost:8000";
+
+  // Elements
+  const openModalBtn = document.getElementById("looponics-open-modal-btn");
+  const closeModalBtn = document.getElementById("looponics-close-modal-btn");
+  const modalOverlay = document.getElementById("looponics-modal-overlay");
+  const bookingForm = document.getElementById("looponics-booking-form");
+  const submitBtn = document.getElementById("looponics-submit-btn");
+  const alertBox = document.getElementById("looponics-alert");
+  const loader = document.getElementById("looponics-loader");
+  const successScreen = document.getElementById("looponics-success-screen");
+  const meetLinkElem = document.getElementById("looponics-meet-link");
+  const doneBtn = document.getElementById("looponics-done-btn");
+  const datetimeInput = document.getElementById("looponics-datetime");
+
+  // Prevent booking past dates by setting min attribute to current local time
+  function setMinBookingTime() {
+    const now = new Date();
+    // Add 10 minutes buffer
+    now.setMinutes(now.getMinutes() + 10);
+    const pad = (n) => String(n).padStart(2, '0');
+    const minString = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    datetimeInput.min = minString;
+  }
+
+  // Open Modal
+  function openModal() {
+    setMinBookingTime();
+    modalOverlay.classList.add("active");
+    modalOverlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden"; // Prevent background scroll
+  }
+
+  // Close Modal
+  function closeModal() {
+    modalOverlay.classList.remove("active");
+    modalOverlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    resetForm();
+  }
+
+  // Reset Modal State
+  function resetForm() {
+    bookingForm.reset();
+    bookingForm.style.display = "block";
+    loader.style.display = "none";
+    successScreen.style.display = "none";
+    alertBox.style.display = "none";
+    alertBox.className = "looponics-alert";
+  }
+
+  openModalBtn.addEventListener("click", openModal);
+  closeModalBtn.addEventListener("click", closeModal);
+  doneBtn.addEventListener("click", closeModal);
+
+  // Close on outside click
+  modalOverlay.addEventListener("click", function(e) {
+    if (e.target === modalOverlay) {
+      closeModal();
+    }
+  });
+
+  // Close on Escape key
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && modalOverlay.classList.contains("active")) {
+      closeModal();
+    }
+  });
+
+  // Helper: Convert local datetime-local value to ISO 8601 string WITH timezone offset
+  function convertLocalToIsoWithOffset(localDateTimeStr) {
+    const date = new Date(localDateTimeStr);
+    const pad = (n) => String(Math.floor(Math.abs(n))).padStart(2, '0');
+    const offsetMinutes = -date.getTimezoneOffset(); // in minutes
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const offsetStr = sign + pad(offsetMinutes / 60) + ':' + pad(offsetMinutes % 60);
+
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const mins = pad(date.getMinutes());
+    const secs = pad(date.getSeconds());
+
+    return `${year}-${month}-${day}T${hours}:${mins}:${secs}${offsetStr}`;
+  }
+
+  function showAlert(message) {
+    alertBox.textContent = message;
+    alertBox.className = "looponics-alert looponics-alert-error";
+    alertBox.style.display = "block";
+  }
+
+  // Form Submission
+  bookingForm.addEventListener("submit", async function(e) {
+    e.preventDefault();
+    alertBox.style.display = "none";
+
+    const name = document.getElementById("looponics-name").value.trim();
+    const email = document.getElementById("looponics-email").value.trim();
+    const rawDateTime = datetimeInput.value;
+    const message = document.getElementById("looponics-message").value.trim();
+    const website = document.getElementById("looponics-honeypot").value.trim();
+
+    if (!name || !email || !rawDateTime) {
+      showAlert("Please fill in all required fields.");
+      return;
+    }
+
+    const isoStartTime = convertLocalToIsoWithOffset(rawDateTime);
+
+    const payload = {
+      name: name,
+      email: email,
+      startTime: isoStartTime,
+      message: message,
+      website: website // honeypot
+    };
+
+    // Transition to Loading State
+    bookingForm.style.display = "none";
+    loader.style.display = "block";
+
+    try {
+      const response = await fetch(`${API_URL}/book-call`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data.ok) {
+        // Show Success
+        loader.style.display = "none";
+        meetLinkElem.href = data.meetLink || "#";
+        meetLinkElem.textContent = data.meetLink || "Google Meet invite sent via email";
+        successScreen.style.display = "block";
+      } else if (response.status === 409) {
+        // Slot is busy
+        loader.style.display = "none";
+        bookingForm.style.display = "block";
+        showAlert("That time slot is already booked or unavailable. Please choose another date or time.");
+      } else if (response.status === 429) {
+        loader.style.display = "none";
+        bookingForm.style.display = "block";
+        showAlert("Too many booking requests from your connection. Please wait an hour before trying again.");
+      } else if (response.status === 400) {
+        loader.style.display = "none";
+        bookingForm.style.display = "block";
+        showAlert(data.detail || "Cannot book a call in the past. Please select an upcoming slot.");
+      } else {
+        loader.style.display = "none";
+        bookingForm.style.display = "block";
+        showAlert(data.detail || "Unable to complete booking. Please try again or reach out to info@looponics.tech.");
+      }
+    } catch (err) {
+      loader.style.display = "none";
+      bookingForm.style.display = "block";
+      showAlert("Could not connect to the scheduling server. Please verify your internet connection or try again shortly.");
+    }
+  });
+
+})();
+
+// =========================================================================
+// EXAMPLE: HOW TO USE THE SEPARATE /submit-form ENDPOINT (FOR FUTURE FORMS)
+// =========================================================================
+/*
+async function submitCustomContactForm(formDataObject) {
+  const API_URL = "http://localhost:8000"; // Or live Render URL
+  try {
+    const response = await fetch(`${API_URL}/submit-form`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formDataObject) // e.g. { email: "user@domain.com", projectType: "Automation", budget: "$5k" }
+    });
+    const result = await response.json();
+    if (response.ok && result.ok) {
+      console.log("Form submitted successfully:", result);
+    } else {
+      console.error("Submission error:", result);
+    }
+  } catch (error) {
+    console.error("Network error:", error);
+  }
+}
+*/
+</script>
