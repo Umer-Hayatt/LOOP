@@ -342,9 +342,11 @@
 (function() {
   // =========================================================================
   // API URL CONFIGURATION
-  // Points to your live Render backend
+  // Automatically uses local server when testing locally, and Render in production
   // =========================================================================
-  const API_URL = "https://loop-btqc.onrender.com";
+  const API_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    ? "http://localhost:8000"
+    : "https://loop-btqc.onrender.com";
 
   // Elements
   const openModalBtn = document.getElementById("looponics-open-modal-btn");
@@ -523,7 +525,9 @@
 // =========================================================================
 /*
 async function submitCustomClientForm(clientFormData) {
-  const API_URL = "https://loop-btqc.onrender.com";
+  const API_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    ? "http://localhost:8000"
+    : "https://loop-btqc.onrender.com";
 
   // Automatically attach bookingId if client previously booked a call
   const savedBookingId = sessionStorage.getItem("looponics_booking_id");
