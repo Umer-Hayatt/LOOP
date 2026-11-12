@@ -19,19 +19,27 @@ def format_datetime_for_display(iso_str: str, timezone_name: str) -> str:
         return iso_str
 
 def _send_smtp_message(msg: EmailMessage) -> bool:
-    """Internal helper to dispatch an EmailMessage over SMTP."""
+    """Internal helper to dispatch an EmailMessage over SMTP (supports port 465 SSL and port 587 STARTTLS)."""
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
         logger.warning("SMTP credentials not configured. Skipping email dispatch.")
         return False
 
     try:
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.send_message(msg)
-            return True
+        if settings.SMTP_PORT == 465:
+            # Direct SSL connection (standard for port 465)
+            with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.send_message(msg)
+                return True
+        else:
+            # STARTTLS connection (standard for port 587)
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.send_message(msg)
+                return True
     except Exception as e:
         logger.error(f"Failed to send email to {msg['To']}: {e}")
         return False
