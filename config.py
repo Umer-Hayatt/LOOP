@@ -21,7 +21,7 @@ class Settings:
 
         raw_origins = os.getenv(
             "ALLOWED_ORIGINS",
-            "https://looponics.tech,http://localhost:5500",
+            "https://looponics.tech,http://localhost:5500,https://loop-btqc.onrender.com",
         )
         self.ALLOWED_ORIGINS: List[str] = [
             origin.strip() for origin in raw_origins.split(",") if origin.strip()

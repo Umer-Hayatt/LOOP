@@ -28,7 +28,7 @@ services:
       - key: SMTP_PASSWORD
         sync: false
       - key: ALLOWED_ORIGINS
-        value: https://looponics.tech,http://localhost:5500
+        value: https://looponics.tech,http://localhost:5500,https://loop-btqc.onrender.com
       - key: TIMEZONE
         value: Asia/Karachi
       - key: MEETING_MINUTES
