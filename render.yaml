@@ -33,3 +33,4 @@ services:
         value: Asia/Karachi
       - key: MEETING_MINUTES
         value: 30
+

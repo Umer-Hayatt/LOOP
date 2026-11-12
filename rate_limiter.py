@@ -35,3 +35,4 @@ class InMemoryRateLimiter:
 
 # Global booking rate limiter instance: 5 requests per hour
 booking_rate_limiter = InMemoryRateLimiter(max_requests=5, window_seconds=3600)
+

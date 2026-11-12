@@ -179,3 +179,4 @@ def test_submit_form_invalid_email():
     """POST /submit-form rejects missing or invalid email."""
     response = client.post("/submit-form", json={"company": "Acme Corp"})
     assert response.status_code == 422
+

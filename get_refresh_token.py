@@ -60,39 +60,39 @@ def main():
     print(f"GOOGLE_REFRESH_TOKEN={creds.refresh_token}")
     print("=" * 60)
 
-    # Prompt user if they want to automatically update or create .env
+    # Automatically update or create .env with these credentials
     env_file = ".env"
-    answer = input("\nWould you like to automatically write/update these in your .env file? (y/n): ").strip().lower()
-    if answer == "y":
-        lines_to_add = {
-            "GOOGLE_CLIENT_ID": creds.client_id,
-            "GOOGLE_CLIENT_SECRET": creds.client_secret,
-            "GOOGLE_REFRESH_TOKEN": creds.refresh_token,
-        }
+    lines_to_add = {
+        "GOOGLE_CLIENT_ID": creds.client_id,
+        "GOOGLE_CLIENT_SECRET": creds.client_secret,
+        "GOOGLE_REFRESH_TOKEN": creds.refresh_token,
+    }
 
-        existing_lines = []
-        if os.path.exists(env_file):
-            with open(env_file, "r", encoding="utf-8") as f:
-                existing_lines = f.readlines()
+    existing_lines = []
+    if os.path.exists(env_file):
+        with open(env_file, "r", encoding="utf-8") as f:
+            existing_lines = f.readlines()
 
-        updated_keys = set()
-        new_lines = []
-        for line in existing_lines:
-            key = line.split("=")[0].strip()
-            if key in lines_to_add:
-                new_lines.append(f"{key}={lines_to_add[key]}\n")
-                updated_keys.add(key)
-            else:
-                new_lines.append(line)
+    updated_keys = set()
+    new_lines = []
+    for line in existing_lines:
+        key = line.split("=")[0].strip()
+        if key in lines_to_add:
+            new_lines.append(f"{key}={lines_to_add[key]}\n")
+            updated_keys.add(key)
+        else:
+            new_lines.append(line)
 
-        for key, val in lines_to_add.items():
-            if key not in updated_keys:
-                new_lines.append(f"{key}={val}\n")
+    for key, val in lines_to_add.items():
+        if key not in updated_keys:
+            new_lines.append(f"{key}={val}\n")
 
-        with open(env_file, "w", encoding="utf-8") as f:
-            f.writelines(new_lines)
+    with open(env_file, "w", encoding="utf-8") as f:
+        f.writelines(new_lines)
 
-        print(".env updated successfully with your Google credentials!")
+    print("\n[SUCCESS] Your .env file has been automatically updated with your Google OAuth credentials!")
+
 
 if __name__ == "__main__":
     main()
+

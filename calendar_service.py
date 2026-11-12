@@ -107,3 +107,4 @@ def create_booking_event(
                 break
 
     return event, meet_link
+
