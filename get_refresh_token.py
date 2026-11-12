@@ -5,6 +5,7 @@ Run this locally on your computer with credentials.json in the same folder.
 
 import os
 import sys
+import json
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 SCOPES = [
@@ -29,6 +30,32 @@ def main():
         print("=" * 60)
         sys.exit(1)
 
+    with open(credentials_path, "r", encoding="utf-8") as f:
+        client_data = json.load(f)
+    client_type = list(client_data.keys())[0]
+    redirect_uris = client_data[client_type].get("redirect_uris", [])
+
+    # Check for localhost redirect URIs if it is a Web application
+    port = 0
+    if client_type == "web":
+        has_localhost = any("localhost:8080" in uri or "127.0.0.1:8080" in uri for uri in redirect_uris)
+        if has_localhost:
+            port = 8080
+        elif not any("localhost" in uri or "127.0.0.1" in uri for uri in redirect_uris):
+            print("=" * 65)
+            print("NOTICE: You downloaded a 'Web application' credentials file.")
+            print(f"Current redirect URIs configured: {redirect_uris}")
+            print("\nTo allow this local script to sign in, please:")
+            print("1. Go to Google Cloud Console > APIs & Services > Credentials.")
+            print("2. Click on your Web client.")
+            print("3. Under 'Authorized redirect URIs', click '+ ADD URI' and add:")
+            print("   http://localhost:8080/")
+            print("4. Click Save, re-download credentials.json, and re-run this script.")
+            print("   (OR create an OAuth client with Type: 'Desktop app' which needs no URIs).")
+            print("=" * 65)
+            # Try port 8080 in case user added it in console without re-downloading JSON
+            port = 8080
+
     print("Starting Google OAuth local authorization flow...")
     print("A browser window will open automatically asking you to log in and authorize.")
 
@@ -40,7 +67,7 @@ def main():
     # access_type='offline' is required to get a refresh token
     # prompt='consent' ensures Google always returns a refresh_token
     creds = flow.run_local_server(
-        port=0,
+        port=port,
         access_type="offline",
         prompt="consent",
     )
