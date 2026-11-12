@@ -479,6 +479,13 @@
       const data = await response.json().catch(() => ({}));
 
       if (response.ok && data.ok) {
+        // Store bookingId so future forms can automatically associate with this call
+        if (data.bookingId) {
+          try {
+            sessionStorage.setItem("looponics_booking_id", data.bookingId);
+          } catch (e) {}
+        }
+
         // Show Success
         loader.style.display = "none";
         meetLinkElem.href = data.meetLink || "#";
@@ -515,19 +522,27 @@
 // EXAMPLE: HOW TO USE THE SEPARATE /submit-form ENDPOINT (FOR FUTURE FORMS)
 // =========================================================================
 /*
-async function submitCustomContactForm(formDataObject) {
-  const API_URL = "http://localhost:8000"; // Or live Render URL
+async function submitCustomClientForm(clientFormData) {
+  const API_URL = "http://localhost:8000"; // Or your live Render URL
+
+  // Automatically attach bookingId if client previously booked a call
+  const savedBookingId = sessionStorage.getItem("looponics_booking_id");
+  const payload = {
+    ...clientFormData, // e.g. { email: "client@domain.com", projectType: "Automation", budget: "$10k" }
+    bookingId: savedBookingId || undefined
+  };
+
   try {
     const response = await fetch(`${API_URL}/submit-form`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formDataObject) // e.g. { email: "user@domain.com", projectType: "Automation", budget: "$5k" }
+      body: JSON.stringify(payload)
     });
     const result = await response.json();
     if (response.ok && result.ok) {
-      console.log("Form submitted successfully:", result);
+      console.log("Form submitted successfully! Linked booking:", result.matchedBooking);
     } else {
-      console.error("Submission error:", result);
+      console.error("Submission failed:", result);
     }
   } catch (error) {
     console.error("Network error:", error);

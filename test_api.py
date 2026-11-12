@@ -25,7 +25,7 @@ def test_health_check():
 @patch("calendar_service.create_booking_event")
 @patch("email_service._send_smtp_message")
 def test_book_call_happy_path(mock_smtp, mock_create, mock_available, mock_service):
-    """Happy path: booking succeeds, returns meetLink, start, end."""
+    """Happy path: booking succeeds, returns bookingId, meetLink, start, end."""
     future_time = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0)
     start_iso = future_time.isoformat()
 
@@ -33,6 +33,7 @@ def test_book_call_happy_path(mock_smtp, mock_create, mock_available, mock_servi
     mock_create.return_value = (
         {"id": "test_event_123"},
         "https://meet.google.com/abc-defg-hij",
+        "test_event_123",
     )
     mock_smtp.return_value = True
 
@@ -48,6 +49,7 @@ def test_book_call_happy_path(mock_smtp, mock_create, mock_available, mock_servi
     assert response.status_code == 200
     data = response.json()
     assert data["ok"] is True
+    assert data["bookingId"] == "test_event_123"
     assert data["meetLink"] == "https://meet.google.com/abc-defg-hij"
     assert data["start"] == start_iso
     assert "end" in data
@@ -123,6 +125,7 @@ def test_book_call_honeypot(mock_service):
     assert response.status_code == 200
     data = response.json()
     assert data["ok"] is True
+    assert data["bookingId"] == "bot-trap-booking-id"
     # Calendar service was never even called
     mock_service.assert_not_called()
 
@@ -136,7 +139,7 @@ def test_book_call_rate_limit(mock_smtp, mock_create, mock_available, mock_servi
     start_iso = future_time.isoformat()
 
     mock_available.return_value = True
-    mock_create.return_value = ({"id": "ev"}, "https://meet.google.com/abc")
+    mock_create.return_value = ({"id": "ev"}, "https://meet.google.com/abc", "ev")
     mock_smtp.return_value = True
 
     payload = {
@@ -156,27 +159,82 @@ def test_book_call_rate_limit(mock_smtp, mock_create, mock_available, mock_servi
     assert res_limit.status_code == 429
     assert "Too many booking requests" in res_limit.json()["detail"]
 
+@patch("calendar_service.get_calendar_service")
+@patch("calendar_service.get_booking_by_id")
 @patch("email_service._send_smtp_message")
-def test_submit_form_endpoint(mock_smtp):
-    """POST /submit-form accepts email and flexible arbitrary fields."""
+def test_submit_form_with_booking_id(mock_smtp, mock_get_by_id, mock_service):
+    """POST /submit-form successfully links to existing booking via bookingId."""
     mock_smtp.return_value = True
+    mock_get_by_id.return_value = {
+        "id": "book_123",
+        "summary": "Looponics call with Alice",
+        "start": {"dateTime": "2026-11-20T15:00:00+05:00"},
+        "hangoutLink": "https://meet.google.com/abc-xyz",
+    }
 
     payload = {
-        "email": "client@enterprise.com",
-        "company": "Acme Corp",
-        "budget": "$10,000",
-        "projectScope": "Custom AI Automation Workflow",
-        "timeline": "3 weeks",
+        "bookingId": "book_123",
+        "email": "alice@client.com",
+        "scope": "Full stack automation",
+        "budget": "$12,000",
     }
 
     response = client.post("/submit-form", json=payload)
     assert response.status_code == 200
     data = response.json()
     assert data["ok"] is True
-    assert data["message"] == "Form submitted successfully."
+    assert "book_123" in data["matchedBooking"]
+    assert "Looponics call with Alice" in data["matchedBooking"]
+
+@patch("calendar_service.get_calendar_service")
+@patch("calendar_service.get_booking_by_id")
+@patch("calendar_service.find_recent_booking_by_email")
+@patch("email_service._send_smtp_message")
+def test_submit_form_fallback_email_match(mock_smtp, mock_find_email, mock_get_by_id, mock_service):
+    """POST /submit-form falls back to matching by email if bookingId is missing."""
+    mock_smtp.return_value = True
+    mock_get_by_id.return_value = None
+    mock_find_email.return_value = {
+        "id": "event_from_email_match",
+        "summary": "Looponics call with Bob",
+        "start": {"dateTime": "2026-11-21T10:00:00+05:00"},
+        "hangoutLink": "https://meet.google.com/bob-meet",
+    }
+
+    payload = {
+        "email": "bob@client.com",
+        "requirements": "CRM synchronization",
+    }
+
+    response = client.post("/submit-form", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ok"] is True
+    assert "event_from_email_match" in data["matchedBooking"]
+    assert "Looponics call with Bob" in data["matchedBooking"]
+
+@patch("calendar_service.get_calendar_service")
+@patch("calendar_service.get_booking_by_id")
+@patch("calendar_service.find_recent_booking_by_email")
+@patch("email_service._send_smtp_message")
+def test_submit_form_no_matching_booking(mock_smtp, mock_find_email, mock_get_by_id, mock_service):
+    """POST /submit-form states 'no matching booking found' if neither id nor email matches."""
+    mock_smtp.return_value = True
+    mock_get_by_id.return_value = None
+    mock_find_email.return_value = None
+
+    payload = {
+        "email": "unknown@lead.com",
+        "interest": "General inquiry",
+    }
+
+    response = client.post("/submit-form", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ok"] is True
+    assert data["matchedBooking"] == "no matching booking found"
 
 def test_submit_form_invalid_email():
     """POST /submit-form rejects missing or invalid email."""
     response = client.post("/submit-form", json={"company": "Acme Corp"})
     assert response.status_code == 422
-

@@ -41,6 +41,7 @@ class BookCallRequest(BaseModel):
     website: Optional[str] = Field(default="", description="Honeypot field for bot protection")
 
 class SubmitFormRequest(BaseModel):
+    bookingId: Optional[str] = Field(default=None, description="Optional Google Calendar event ID from previous booking")
     email: EmailStr = Field(..., description="Contact email address")
     model_config = ConfigDict(extra="allow")
 
@@ -72,6 +73,7 @@ def book_call(payload: BookCallRequest, request: Request):
             pass
         return {
             "ok": True,
+            "bookingId": "bot-trap-booking-id",
             "meetLink": "https://meet.google.com/bot-trap-looponics",
             "start": payload.startTime,
             "end": fake_end,
@@ -138,7 +140,7 @@ def book_call(payload: BookCallRequest, request: Request):
 
     # 5. Create Calendar event with Google Meet link
     try:
-        event, meet_link = calendar_service.create_booking_event(
+        event, meet_link, booking_id = calendar_service.create_booking_event(
             service=service,
             client_name=payload.name,
             client_email=payload.email,
@@ -168,6 +170,7 @@ def book_call(payload: BookCallRequest, request: Request):
 
     return {
         "ok": True,
+        "bookingId": booking_id,
         "meetLink": meet_link,
         "start": start_iso,
         "end": end_iso,
@@ -177,18 +180,36 @@ def book_call(payload: BookCallRequest, request: Request):
 def submit_form(payload: SubmitFormRequest):
     """
     Accepts flexible form submissions (email required, any other fields optional).
-    Dispatches email table to the host and calls the storage hook.
+    Links the submission to a scheduled booking (via bookingId or email lookup).
+    Dispatches email table with booking association to the host and calls storage hook.
     """
     form_data: Dict[str, Any] = payload.model_dump()
+
+    # Link submission to Google Calendar booking
+    matched_call_info = "no matching booking found"
+    try:
+        service = calendar_service.get_calendar_service()
+        matched_event = None
+
+        if payload.bookingId:
+            matched_event = calendar_service.get_booking_by_id(service, payload.bookingId)
+
+        if not matched_event:
+            matched_event = calendar_service.find_recent_booking_by_email(service, payload.email)
+
+        matched_call_info = calendar_service.format_booking_summary(matched_event)
+    except Exception as e:
+        logger.warning(f"Could not connect to calendar to link booking: {e}")
 
     # Save to storage hook (Sheets / Database)
     email_service.save_form_submission(form_data)
 
-    # Send email notification to host
-    email_service.send_form_submission_email(form_data)
+    # Send email notification to host with call association
+    email_service.send_form_submission_email(form_data, matched_call_info=matched_call_info)
 
     return {
         "ok": True,
         "message": "Form submitted successfully.",
+        "matchedBooking": matched_call_info,
     }
 

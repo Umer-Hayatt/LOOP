@@ -150,16 +150,22 @@ Client Note:
     except Exception as e:
         logger.error(f"Error preparing host notification email: {e}")
 
-def send_form_submission_email(form_data: Dict[str, Any]) -> bool:
+def send_form_submission_email(form_data: Dict[str, Any], matched_call_info: str = "no matching booking found") -> bool:
     """
     Emails all submission fields to the host as a clean, readable table.
+    Explicitly indicates which scheduled call the submission belongs to (or 'no matching booking found').
     """
     try:
         client_email = form_data.get("email", "Unknown")
         subject = f"New Form Submission: {client_email}"
 
-        # Build clean plain-text table
-        plain_lines = ["New Website Form Submission", "=" * 32]
+        # Build clean plain-text message
+        plain_lines = [
+            "New Website Form Submission",
+            "=" * 35,
+            f"Associated Call: {matched_call_info}",
+            "-" * 35,
+        ]
         for key, value in form_data.items():
             plain_lines.append(f"{key}: {value}")
         plain_body = "\n".join(plain_lines)
@@ -170,11 +176,20 @@ def send_form_submission_email(form_data: Dict[str, Any]) -> bool:
             for k, v in form_data.items()
         )
 
+        badge_bg = "#dbeafe" if matched_call_info != "no matching booking found" else "#f1f5f9"
+        badge_color = "#1e40af" if matched_call_info != "no matching booking found" else "#475569"
+
         html_body = f"""<!DOCTYPE html>
 <html>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; padding: 20px;">
   <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px;">
     <h2 style="margin-top: 0; color: #0f172a;">New Website Form Submission</h2>
+    
+    <div style="background: {badge_bg}; border-left: 4px solid {badge_color}; padding: 12px 16px; border-radius: 4px; margin-bottom: 20px;">
+      <span style="font-size: 12px; font-weight: bold; text-transform: uppercase; color: {badge_color}; display: block; margin-bottom: 2px;">Call Association</span>
+      <span style="font-size: 14px; color: #0f172a; font-weight: 500;">{matched_call_info}</span>
+    </div>
+
     <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
       <thead>
         <tr style="background: #0f172a; color: #ffffff;">
